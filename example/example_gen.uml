@@ -1,0 +1,72 @@
+@startuml
+entity customer {
+  + id [PK]
+  --
+  name
+  zip_code
+  address
+  phone_number
+}
+
+entity customer_order {
+  + id [PK]
+  --
+  customer_id
+  delivery_method
+  shipping_address
+  payment_method
+  total_price
+  total_tax_amount
+  ordered_at
+}
+
+entity order_detail {
+  + id [PK]
+  + customer_order_id [PK]
+  --
+  sku_id
+  amount
+  price_before_tax
+  price_after_tax
+  ordered_at
+}
+
+entity product {
+  + id [PK]
+  --
+  vendor_id
+  name
+  country
+  category
+}
+
+entity sku {
+  + id [PK]
+  --
+  product_id
+  color
+  size
+  weight
+  sales_unit_price
+  purchase_unit_price
+}
+
+entity vendor {
+  + id [PK]
+  --
+  name
+  zip_code
+  address
+  phone_number
+}
+
+ customer_order }-- customer 
+
+ order_detail }-- sku 
+
+ order_detail ||-|| customer_order 
+
+ product }-- vendor 
+
+ sku }-- product 
+@enduml

@@ -1,0 +1,19 @@
+language: go
+
+go:
+  - 1.8
+  - 1.9
+  - tip
+
+services:
+  - postgresql
+
+before_script:
+  - psql -c 'CREATE USER planter;' -U postgres
+  - psql -c 'CREATE DATABASE planter OWNER planter;' -U postgres
+
+script:
+  - go get -u github.com/mattn/gom 
+  - gom install
+  - go fmt ./...
+  - go test -v
