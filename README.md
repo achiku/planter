@@ -4,7 +4,7 @@
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/achiku/planter/master/LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/achiku/planter)](https://goreportcard.com/report/github.com/achiku/planter)
 
-Generate PlantUML ER Diagram Textual Description From PostgreSQL Tables
+Generate PlantUML ER diagram textual description from PostgreSQL tables
 
 
 ## Why created
