@@ -1,14 +1,16 @@
 @startuml
-entity customer {
+entity "customer" {
+  Customer Information
+  ..
   + id [PK]
   --
-  name
-  zip_code
-  address
-  phone_number
+  name : Customer Name
+  zip_code : Customer Zip Code
+  address : Customer Address
+  phone_number : Customer Phone Number
 }
 
-entity customer_order {
+entity "customer_order" {
   + id [PK]
   --
   customer_id
@@ -20,7 +22,7 @@ entity customer_order {
   ordered_at
 }
 
-entity order_detail {
+entity "order_detail" {
   + id [PK]
   + customer_order_id [PK]
   --
@@ -31,7 +33,7 @@ entity order_detail {
   ordered_at
 }
 
-entity product {
+entity "product" {
   + id [PK]
   --
   vendor_id
@@ -40,7 +42,7 @@ entity product {
   category
 }
 
-entity sku {
+entity "sku" {
   + id [PK]
   --
   product_id
@@ -51,7 +53,7 @@ entity sku {
   purchase_unit_price
 }
 
-entity vendor {
+entity "vendor" {
   + id [PK]
   --
   name
@@ -62,9 +64,9 @@ entity vendor {
 
  customer_order }-- customer 
 
- order_detail }-- sku 
-
  order_detail ||-|| customer_order 
+
+ order_detail }-- sku 
 
  product }-- vendor 
 

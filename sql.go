@@ -46,7 +46,7 @@ SELECT
 FROM pg_class c
 JOIN ONLY pg_namespace n
 ON n.oid = c.relnamespace
-JOIN ONLY pg_description pd ON pd.objoid = c.oid AND pd.objsubid = 0
+LEFT JOIN pg_description pd ON pd.objoid = c.oid AND pd.objsubid = 0
 WHERE n.nspname = $1
 AND c.relkind = 'r'
 ORDER BY c.relname

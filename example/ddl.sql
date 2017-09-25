@@ -13,6 +13,11 @@ create table customer (
   , address text not null
   , phone_number text not null
 );
+COMMENT ON TABLE customer IS 'Customer Information';
+COMMENT ON COLUMN customer.name IS 'Customer Name';
+COMMENT ON COLUMN customer.zip_code IS 'Customer Zip Code';
+COMMENT ON COLUMN customer.address IS 'Customer Address';
+COMMENT ON COLUMN customer.phone_number IS 'Customer Phone Number';
 
 create table vendor (
   id bigserial primary key
