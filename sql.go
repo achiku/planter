@@ -4,6 +4,7 @@ const columDefSQL = `
 SELECT
     a.attnum AS field_ordinal,
     a.attname AS column_name,
+    pd.description AS description,
     format_type(a.atttypid, a.atttypmod) AS data_type,
     a.attnotnull AS not_null,
     COALESCE(ct.contype = 'p', false) AS  is_primary_key,
@@ -30,6 +31,7 @@ JOIN ONLY pg_namespace n ON n.oid = c.relnamespace
 LEFT JOIN pg_constraint ct ON ct.conrelid = c.oid
 AND a.attnum = ANY(ct.conkey) AND ct.contype IN ('p', 'u')
 LEFT JOIN pg_attrdef ad ON ad.adrelid = c.oid AND ad.adnum = a.attnum
+LEFT JOIN pg_description pd ON pd.objoid = a.attrelid AND pd.objsubid = a.attnum
 WHERE a.attisdropped = false
 AND n.nspname = $1
 AND c.relname = $2
@@ -39,10 +41,12 @@ ORDER BY a.attnum
 
 const tableDefSQL = `
 SELECT
-  c.relname AS table_name
+  c.relname AS table_name,
+  pd.description AS description
 FROM pg_class c
 JOIN ONLY pg_namespace n
 ON n.oid = c.relnamespace
+JOIN ONLY pg_description pd ON pd.objoid = c.oid AND pd.objsubid = 0
 WHERE n.nspname = $1
 AND c.relkind = 'r'
 ORDER BY c.relname

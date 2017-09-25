@@ -1,16 +1,16 @@
 package main
 
 const entryTmpl = `
-entity {{ .Name }} {
+entity "{{ .Name }}{{- if .Comment.Valid }} - {{ .Comment.String }}{{- end }}" {
 {{- range .Columns }}
   {{- if .IsPrimaryKey }}
-  + {{ .Name }} [PK]
+  + {{ .Name }} [PK]{{- if .Comment.Valid }} : {{ .Comment.String }}{{- end }}
   {{- end }}
 {{- end }}
   --
 {{- range .Columns }}
   {{- if not .IsPrimaryKey }}
-  {{ .Name }}
+  + {{ .Name }} {{- if .Comment.Valid }} : {{ .Comment.String }}{{- end }}
   {{- end }}
 {{- end }}
 }

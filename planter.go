@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"sort"
+	"strings"
 
 	_ "github.com/lib/pq" // postgres
 	"github.com/pkg/errors"
@@ -31,6 +32,7 @@ func OpenDB(connStr string) (*sql.DB, error) {
 type PgColumn struct {
 	FieldOrdinal int
 	Name         string
+	Comment      sql.NullString
 	DataType     string
 	DDLType      string
 	NotNull      bool
@@ -68,9 +70,17 @@ func (k PgForeignKey) IsOneToOne() bool {
 type PgTable struct {
 	Schema      string
 	Name        string
+	Comment     sql.NullString
 	AutoGenPk   bool
 	Columns     []*PgColumn
 	ForeingKeys []*PgForeignKey
+}
+
+func stripCommentSuffix(s string) string {
+	if tok := strings.SplitN(s, "\t", 2); len(tok) == 2 {
+		return tok[0]
+	}
+	return s
 }
 
 // PgLoadColumnDef load Postgres column definition
@@ -85,11 +95,13 @@ func PgLoadColumnDef(db Queryer, schema, table string) ([]*PgColumn, error) {
 		err := colDefs.Scan(
 			&c.FieldOrdinal,
 			&c.Name,
+			&c.Comment,
 			&c.DataType,
 			&c.NotNull,
 			&c.IsPrimaryKey,
 			&c.DDLType,
 		)
+		c.Comment.String = stripCommentSuffix(c.Comment.String)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to scan")
 		}
@@ -136,6 +148,7 @@ func PgLoadTableDef(db Queryer, schema string) ([]*PgTable, error) {
 		t := &PgTable{Schema: schema}
 		err := tbDefs.Scan(
 			&t.Name,
+			&t.Comment,
 		)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to scan")
