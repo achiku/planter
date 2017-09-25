@@ -32,7 +32,7 @@ func OpenDB(connStr string) (*sql.DB, error) {
 type PgColumn struct {
 	FieldOrdinal int
 	Name         string
-	Comment      string
+	Comment      sql.NullString
 	DataType     string
 	DDLType      string
 	NotNull      bool
@@ -70,7 +70,7 @@ func (k PgForeignKey) IsOneToOne() bool {
 type PgTable struct {
 	Schema      string
 	Name        string
-	Comment     string
+	Comment     sql.NullString
 	AutoGenPk   bool
 	Columns     []*PgColumn
 	ForeingKeys []*PgForeignKey
@@ -101,7 +101,7 @@ func PgLoadColumnDef(db Queryer, schema, table string) ([]*PgColumn, error) {
 			&c.IsPrimaryKey,
 			&c.DDLType,
 		)
-		c.Comment = stripCommentSuffix(c.Comment)
+		c.Comment.String = stripCommentSuffix(c.Comment.String)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to scan")
 		}
