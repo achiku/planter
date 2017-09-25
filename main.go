@@ -25,22 +25,22 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ts, err := PgLoadTableDef(db, *schema)
+	ts, err := DefinitionQueries["postgres"].LoadTableDef(db, *schema)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var tbls []*PgTable
+	var tbls []*Table
 	if len(*targetTbls) != 0 {
 		tbls = FilterTables(ts, *targetTbls)
 	} else {
 		tbls = ts
 	}
-	entry, err := PgTableToUMLEntry(tbls)
+	entry, err := TableToUMLEntry(tbls)
 	if err != nil {
 		log.Fatal(err)
 	}
-	rel, err := PgForeignKeyToUMLRelation(tbls)
+	rel, err := ForeignKeyToUMLRelation(tbls)
 	if err != nil {
 		log.Fatal(err)
 	}

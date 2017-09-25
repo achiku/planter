@@ -10,7 +10,7 @@ import (
 // CREATE USER planter;
 // CREATE DATABASE planter OWNER planter;
 
-func testPgSetup(t *testing.T) (*sql.DB, func()) {
+func testPgSetup(t *testing.T) (*sql.DB, func(), QueryDef) {
 	conn, err := sql.Open("postgres", "user=planter dbname=planter sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
@@ -26,16 +26,16 @@ func testPgSetup(t *testing.T) (*sql.DB, func()) {
 	cleanup := func() {
 		conn.Close()
 	}
-	return conn, cleanup
+	return conn, cleanup, DefinitionQueries["postgres"]
 }
 
-func TestPgLoadColumnDef(t *testing.T) {
-	conn, cleanup := testPgSetup(t)
+func TestLoadColumnDef(t *testing.T) {
+	conn, cleanup, def := testPgSetup(t)
 	defer cleanup()
 
 	schema := "public"
 	table := "vendor"
-	cols, err := PgLoadColumnDef(conn, schema, table)
+	cols, err := def.LoadColumnDef(conn, schema, table)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,12 +45,12 @@ func TestPgLoadColumnDef(t *testing.T) {
 }
 
 func TestPgLoadForeignKeyDef(t *testing.T) {
-	conn, cleanup := testPgSetup(t)
+	conn, cleanup, def := testPgSetup(t)
 	defer cleanup()
 
 	schema := "public"
 	table := "order_detail"
-	fks, err := PgLoadForeignKeyDef(conn, schema, table)
+	fks, err := def.LoadForeignKeyDef(conn, schema, table)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,11 +60,11 @@ func TestPgLoadForeignKeyDef(t *testing.T) {
 }
 
 func TestPgLoadTableDef(t *testing.T) {
-	conn, cleanup := testPgSetup(t)
+	conn, cleanup, def := testPgSetup(t)
 	defer cleanup()
 
 	schema := "public"
-	tbls, err := PgLoadTableDef(conn, schema)
+	tbls, err := def.LoadTableDef(conn, schema)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,16 +80,16 @@ func TestPgLoadTableDef(t *testing.T) {
 }
 
 func TestPgTableToUMLEntry(t *testing.T) {
-	conn, cleanup := testPgSetup(t)
+	conn, cleanup, def := testPgSetup(t)
 	defer cleanup()
 
 	schema := "public"
-	tbls, err := PgLoadTableDef(conn, schema)
+	tbls, err := def.LoadTableDef(conn, schema)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	buf, err := PgTableToUMLEntry(tbls)
+	buf, err := TableToUMLEntry(tbls)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,16 +97,16 @@ func TestPgTableToUMLEntry(t *testing.T) {
 }
 
 func TestPgForeignKeyToUMLRelation(t *testing.T) {
-	conn, cleanup := testPgSetup(t)
+	conn, cleanup, def := testPgSetup(t)
 	defer cleanup()
 
 	schema := "public"
-	tbls, err := PgLoadTableDef(conn, schema)
+	tbls, err := def.LoadTableDef(conn, schema)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	buf, err := PgForeignKeyToUMLRelation(tbls)
+	buf, err := ForeignKeyToUMLRelation(tbls)
 	if err != nil {
 		t.Fatal(err)
 	}
