@@ -10,9 +10,9 @@ import (
 
 var (
 	connStr = kingpin.Arg(
-		"conn", "PostgreSQL connection string in URL format").Required().String()
+		"conn", "Database connection string in URL format").Required().String()
 	schema = kingpin.Flag(
-		"schema", "PostgreSQL schema name").Default("public").Short('s').String()
+		"schema", "Database schema name").Default("public").Short('s').String()
 	outFile    = kingpin.Flag("output", "output file path").Short('o').String()
 	targetTbls = kingpin.Flag("table", "target tales").Short('t').Strings()
 )
@@ -20,14 +20,14 @@ var (
 func main() {
 	kingpin.Parse()
 
-	db, err := OpenDB(*connStr)
+	db, typ, err := OpenDB(*connStr)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	ts, err := DefinitionQueries["postgres"].LoadTableDef(db, *schema)
+	ts, err := DefinitionQueries[typ].LoadTableDef(db, *schema)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%+v", err)
 	}
 
 	var tbls []*Table

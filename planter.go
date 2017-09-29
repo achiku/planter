@@ -10,6 +10,7 @@ import (
 
 	_ "github.com/lib/pq" // postgres
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 )
 
 // Queryer database/sql compatible query interface
@@ -20,12 +21,20 @@ type Queryer interface {
 }
 
 // OpenDB opens database connection
-func OpenDB(connStr string) (*sql.DB, error) {
-	conn, err := sql.Open("postgres", connStr)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to database")
+func OpenDB(connStr string) (*sql.DB, string, error) {
+	typ := "postgres"
+	if i := strings.Index(connStr, "://"); i > 0 {
+		typ, connStr = connStr[:i], connStr[i+3:]
 	}
-	return conn, nil
+	conn, err := sql.Open(typ, connStr)
+	if err != nil {
+		return nil, typ, errors.Wrapf(err, "failed to connect to %q database %q", typ, connStr)
+	}
+	switch typ {
+	case "goracle":
+		typ = "oracle"
+	}
+	return conn, typ, nil
 }
 
 // Column postgres columns
@@ -87,23 +96,27 @@ func stripCommentSuffix(s string) string {
 func (def QueryDef) LoadColumnDef(db Queryer, schema, table string) ([]*Column, error) {
 	colDefs, err := db.Query(def.Column, schema, table)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load table def")
+		return nil, errors.Wrap(err, "failed to load table def:\n"+def.Column)
 	}
 	var cols []*Column
 	for colDefs.Next() {
 		var c Column
+		var notNull, isPrimaryKey int
 		err := colDefs.Scan(
 			&c.FieldOrdinal,
 			&c.Name,
 			&c.Comment,
 			&c.DataType,
-			&c.NotNull,
-			&c.IsPrimaryKey,
+			&notNull,
+			&isPrimaryKey,
 			&c.DDLType,
 		)
+		c.NotNull, c.IsPrimaryKey = notNull != 0, isPrimaryKey != 0
 		c.Comment.String = stripCommentSuffix(c.Comment.String)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to scan")
+			var i [7]interface{}
+			colDefs.Scan(&i[0], &i[1], &i[2], &i[3], &i[4], &i[5], &i[6])
+			return nil, errors.Wrapf(err, "failed to scan %q", i)
 		}
 		cols = append(cols, &c)
 	}
@@ -141,9 +154,12 @@ func (def QueryDef) LoadForeignKeyDef(db Queryer, schema, table string) ([]*Fore
 func (def QueryDef) LoadTableDef(db Queryer, schema string) ([]*Table, error) {
 	tbDefs, err := db.Query(def.Table, schema)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load table def")
+		return nil, errors.Wrap(err, "failed to load table def:\n"+def.Table)
 	}
 	var tbs []*Table
+	var grp errgroup.Group
+	limits := make(chan struct{}, 16)
+	var token struct{}
 	for tbDefs.Next() {
 		t := &Table{Schema: schema}
 		err := tbDefs.Scan(
@@ -153,19 +169,25 @@ func (def QueryDef) LoadTableDef(db Queryer, schema string) ([]*Table, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to scan")
 		}
-		cols, err := def.LoadColumnDef(db, schema, t.Name)
-		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("failed to get columns of %s", t.Name))
-		}
-		t.Columns = cols
-		fks, err := def.LoadForeignKeyDef(db, schema, t.Name)
-		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("failed to get fks of %s", t.Name))
-		}
-		t.ForeingKeys = fks
 		tbs = append(tbs, t)
+
+		grp.Go(func() error {
+			limits <- token
+			defer func() { <-limits }()
+			cols, err := def.LoadColumnDef(db, schema, t.Name)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("failed to get columns of %s", t.Name))
+			}
+			t.Columns = cols
+			fks, err := def.LoadForeignKeyDef(db, schema, t.Name)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("failed to get fks of %s", t.Name))
+			}
+			t.ForeingKeys = fks
+			return nil
+		})
 	}
-	return tbs, nil
+	return tbs, grp.Wait()
 }
 
 // TableToUMLEntry table entry
