@@ -34,6 +34,14 @@ entity "order_detail" {
   ordered_at
 }
 
+entity "order_detail_approval" {
+  + order_detail_id [PK]
+  + customer_order_id [PK]
+  --
+  operator_id
+  approved_at
+}
+
 entity "product" {
   + id [PK]
   --
@@ -67,7 +75,11 @@ entity "vendor" {
 
  order_detail }-- sku
 
- order_detail ||-|| customer_order
+ order_detail }-- customer_order
+
+ order_detail_approval ||-|| order_detail
+
+ order_detail_approval ||-|| order_detail
 
  product }-- vendor
 

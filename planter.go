@@ -45,27 +45,39 @@ type ForeignKey struct {
 	SourceTableName       string
 	SourceColName         string
 	IsSourceColPrimaryKey bool
+	SourceTable           *Table
+	SourceColumn          *Column
 	TargetTableName       string
 	TargetColName         string
 	IsTargetColPrimaryKey bool
+	TargetTable           *Table
+	TargetColumn          *Column
 }
 
 // IsOneToOne returns true if one to one relation
+// - in case of composite pk
+//     * one to one
+//         * source table is composite pk && target table is composite pk
+//             * source table fks to target table are all pks
+//     * other cases are one to many
 func (k *ForeignKey) IsOneToOne() bool {
-	if k.IsSourceColPrimaryKey && k.IsTargetColPrimaryKey {
-		return true
-	}
-	return false
-}
-
-// FindTableByName find table by name
-func FindTableByName(tbls []*Table, name string) *Table {
-	for _, tbl := range tbls {
-		if tbl.Name == name {
-			return tbl
+	switch {
+	case k.SourceTable.IsCompositePK() && k.TargetTable.IsCompositePK():
+		var targetFks []*ForeignKey
+		for _, fk := range k.SourceTable.ForeingKeys {
+			if fk.TargetTableName == k.TargetTableName {
+				targetFks = append(targetFks, fk)
+			}
 		}
+		for _, tfk := range targetFks {
+			if !tfk.IsSourceColPrimaryKey || !tfk.IsTargetColPrimaryKey {
+				return false
+			}
+		}
+		return true
+	default:
+		return false
 	}
-	return nil
 }
 
 // Table postgres table
@@ -99,6 +111,30 @@ func stripCommentSuffix(s string) string {
 	return s
 }
 
+// FindTableByName find table by name
+func FindTableByName(tbls []*Table, name string) (*Table, bool) {
+	for _, tbl := range tbls {
+		if tbl.Name == name {
+			return tbl, true
+		}
+	}
+	return nil, false
+}
+
+// FindColumnByName find table by name
+func FindColumnByName(tbls []*Table, tableName, colName string) (*Column, bool) {
+	for _, tbl := range tbls {
+		if tbl.Name == tableName {
+			for _, col := range tbl.Columns {
+				if col.Name == colName {
+					return col, true
+				}
+			}
+		}
+	}
+	return nil, false
+}
+
 // LoadColumnDef load Postgres column definition
 func LoadColumnDef(db Queryer, schema, table string) ([]*Column, error) {
 	colDefs, err := db.Query(columDefSQL, schema, table)
@@ -127,15 +163,16 @@ func LoadColumnDef(db Queryer, schema, table string) ([]*Column, error) {
 }
 
 // LoadForeignKeyDef load Postgres fk definition
-func LoadForeignKeyDef(db Queryer, schema, table string) ([]*ForeignKey, error) {
-	fkDefs, err := db.Query(fkDefSQL, schema, table)
+func LoadForeignKeyDef(db Queryer, schema string, tbls []*Table, tbl *Table) ([]*ForeignKey, error) {
+	fkDefs, err := db.Query(fkDefSQL, schema, tbl.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load fk def")
 	}
 	var fks []*ForeignKey
 	for fkDefs.Next() {
 		fk := ForeignKey{
-			SourceTableName: table,
+			SourceTableName: tbl.Name,
+			SourceTable:     tbl,
 		}
 		err := fkDefs.Scan(
 			&fk.SourceColName,
@@ -150,6 +187,23 @@ func LoadForeignKeyDef(db Queryer, schema, table string) ([]*ForeignKey, error) 
 		}
 		fks = append(fks, &fk)
 	}
+	for _, fk := range fks {
+		targetTbl, found := FindTableByName(tbls, fk.TargetTableName)
+		if !found {
+			return nil, errors.Errorf("%s not found", fk.TargetTableName)
+		}
+		fk.TargetTable = targetTbl
+		targetCol, found := FindColumnByName(tbls, fk.TargetTableName, fk.TargetColName)
+		if !found {
+			return nil, errors.Errorf("%s.%s not found", fk.TargetTableName, fk.TargetColName)
+		}
+		fk.TargetColumn = targetCol
+		sourceCol, found := FindColumnByName(tbls, fk.SourceTableName, fk.SourceColName)
+		if !found {
+			return nil, errors.Errorf("%s.%s not found", fk.SourceTableName, fk.SourceColName)
+		}
+		fk.SourceColumn = sourceCol
+	}
 	return fks, nil
 }
 
@@ -159,7 +213,7 @@ func LoadTableDef(db Queryer, schema string) ([]*Table, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load table def")
 	}
-	var tbs []*Table
+	var tbls []*Table
 	for tbDefs.Next() {
 		t := &Table{Schema: schema}
 		err := tbDefs.Scan(
@@ -174,14 +228,16 @@ func LoadTableDef(db Queryer, schema string) ([]*Table, error) {
 			return nil, errors.Wrap(err, fmt.Sprintf("failed to get columns of %s", t.Name))
 		}
 		t.Columns = cols
-		fks, err := LoadForeignKeyDef(db, schema, t.Name)
-		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("failed to get fks of %s", t.Name))
-		}
-		t.ForeingKeys = fks
-		tbs = append(tbs, t)
+		tbls = append(tbls, t)
 	}
-	return tbs, nil
+	for _, tbl := range tbls {
+		fks, err := LoadForeignKeyDef(db, schema, tbls, tbl)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("failed to get fks of %s", tbl.Name))
+		}
+		tbl.ForeingKeys = fks
+	}
+	return tbls, nil
 }
 
 // TableToUMLEntry table entry
@@ -209,10 +265,10 @@ func ForeignKeyToUMLRelation(tbls []*Table) ([]byte, error) {
 	}
 	var src []byte
 	for _, tbl := range tbls {
-		for _, rel := range tbl.ForeingKeys {
+		for _, fk := range tbl.ForeingKeys {
 			buf := new(bytes.Buffer)
-			if err := tpl.Execute(buf, rel); err != nil {
-				return nil, errors.Wrapf(err, "failed to execute template: %s", rel.ConstraintName)
+			if err := tpl.Execute(buf, fk); err != nil {
+				return nil, errors.Wrapf(err, "failed to execute template: %s", fk.ConstraintName)
 			}
 			src = append(src, buf.Bytes()...)
 		}

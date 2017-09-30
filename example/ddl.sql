@@ -1,3 +1,4 @@
+drop table if exists order_detail_approval;
 drop table if exists order_detail;
 drop table if exists customer_order;
 drop table if exists sku;
@@ -71,3 +72,12 @@ create table order_detail (
   , FOREIGN KEY(customer_order_id) REFERENCES customer_order (id)
   , FOREIGN KEY(sku_id) REFERENCES sku (id)
 );
+
+create table order_detail_approval (
+  order_detail_id bigint not null
+  , customer_order_id bigint not null
+  , operator_id bigint not null 
+  , approved_at timestamp with time zone not null
+  , PRIMARY KEY(order_detail_id, customer_order_id)
+  , FOREIGN KEY(order_detail_id, customer_order_id) REFERENCES order_detail (id, customer_order_id)
+)

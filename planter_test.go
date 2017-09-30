@@ -29,7 +29,7 @@ func testPgSetup(t *testing.T) (*sql.DB, func()) {
 	return conn, cleanup
 }
 
-func TestPgLoadColumnDef(t *testing.T) {
+func TestLoadColumnDef(t *testing.T) {
 	conn, cleanup := testPgSetup(t)
 	defer cleanup()
 
@@ -44,13 +44,21 @@ func TestPgLoadColumnDef(t *testing.T) {
 	}
 }
 
-func TestPgLoadForeignKeyDef(t *testing.T) {
+func TestLoadForeignKeyDef(t *testing.T) {
 	conn, cleanup := testPgSetup(t)
 	defer cleanup()
 
 	schema := "public"
-	table := "order_detail"
-	fks, err := LoadForeignKeyDef(conn, schema, table)
+	tbls, err := LoadTableDef(conn, schema)
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := "order_detail"
+	tbl, found := FindTableByName(tbls, n)
+	if !found {
+		t.Fatalf("%s not found", n)
+	}
+	fks, err := LoadForeignKeyDef(conn, schema, tbls, tbl)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,7 +67,7 @@ func TestPgLoadForeignKeyDef(t *testing.T) {
 	}
 }
 
-func TestPgLoadTableDef(t *testing.T) {
+func TestLoadTableDef(t *testing.T) {
 	conn, cleanup := testPgSetup(t)
 	defer cleanup()
 
@@ -79,7 +87,7 @@ func TestPgLoadTableDef(t *testing.T) {
 	}
 }
 
-func TestPgTableToUMLEntry(t *testing.T) {
+func TestTableToUMLEntry(t *testing.T) {
 	conn, cleanup := testPgSetup(t)
 	defer cleanup()
 
@@ -96,7 +104,7 @@ func TestPgTableToUMLEntry(t *testing.T) {
 	t.Logf("%s", buf)
 }
 
-func TestPgForeignKeyToUMLRelation(t *testing.T) {
+func TestForeignKeyToUMLRelation(t *testing.T) {
 	conn, cleanup := testPgSetup(t)
 	defer cleanup()
 
