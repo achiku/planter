@@ -127,7 +127,7 @@ func (def QueryDef) LoadColumnDef(db Queryer, schema, table string) ([]*Column, 
 func (def QueryDef) LoadForeignKeyDef(db Queryer, schema, table string) ([]*ForeignKey, error) {
 	fkDefs, err := db.Query(def.ForeignKey, schema, table)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load fk def")
+		return nil, errors.Wrap(err, "failed to load fk def\n"+def.ForeignKey)
 	}
 	var fks []*ForeignKey
 	for fkDefs.Next() {

@@ -13,8 +13,8 @@ SELECT
     a.attname AS column_name,
     pd.description AS description,
     format_type(a.atttypid, a.atttypmod) AS data_type,
-    CASE WHEN a.attnotnull THEN 1 ELSE 0 END AS not_null,
-    CASE WHEN COALESCE(ct.contype = 'p', false) THEN 1 ELSE 0 END AS is_primary_key,
+    (CASE WHEN a.attnotnull THEN 1 ELSE 0 END) AS not_null,
+    (CASE WHEN COALESCE(ct.contype = 'p', false) THEN 1 ELSE 0 END) AS is_primary_key,
     CASE WHEN a.atttypid = ANY ('{int,int8,int2}'::regtype[])
       AND EXISTS (
          SELECT 1 FROM pg_attrdef ad
@@ -63,14 +63,14 @@ SELECT
   , cl.relname as "parent_table"
   , att.attname as "parent_column"
   , con.conname
-  , CASE WHEN (case
+  , (CASE WHEN (case
       when pi.indisprimary is null then false
       else pi.indisprimary
-    end) THEN 1 ELSE 0 END as "is_parent_pk"
-  , CASE WHEN (case
+    end) THEN 1 ELSE 0 END) as "is_parent_pk"
+  , (CASE WHEN (case
       when ci.indisprimary is null then false
       else ci.indisprimary
-    end) THEN 1 ELSE 0 as "is_child_pk"
+    end) THEN 1 ELSE 0 END) as "is_child_pk"
 from (
   select
     unnest(con1.conkey) as "parent"
