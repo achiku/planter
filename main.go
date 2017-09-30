@@ -10,9 +10,9 @@ import (
 
 var (
 	connStr = kingpin.Arg(
-		"conn", "PostgreSQL connection string in URL format").Required().String()
+		"conn", "Database connection string in URL format").Required().String()
 	schema = kingpin.Flag(
-		"schema", "PostgreSQL schema name").Default("public").Short('s').String()
+		"schema", "Database schema name").Default("public").Short('s').String()
 	outFile    = kingpin.Flag("output", "output file path").Short('o').String()
 	targetTbls = kingpin.Flag("table", "target tales").Short('t').Strings()
 )
@@ -20,27 +20,27 @@ var (
 func main() {
 	kingpin.Parse()
 
-	db, err := OpenDB(*connStr)
+	db, typ, err := OpenDB(*connStr)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	ts, err := PgLoadTableDef(db, *schema)
+	ts, err := DefinitionQueries[typ].LoadTableDef(db, *schema)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%+v", err)
 	}
 
-	var tbls []*PgTable
+	var tbls []*Table
 	if len(*targetTbls) != 0 {
 		tbls = FilterTables(ts, *targetTbls)
 	} else {
 		tbls = ts
 	}
-	entry, err := PgTableToUMLEntry(tbls)
+	entry, err := TableToUMLEntry(tbls)
 	if err != nil {
 		log.Fatal(err)
 	}
-	rel, err := PgForeignKeyToUMLRelation(tbls)
+	rel, err := ForeignKeyToUMLRelation(tbls)
 	if err != nil {
 		log.Fatal(err)
 	}

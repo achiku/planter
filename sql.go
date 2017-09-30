@@ -1,13 +1,20 @@
 package main
 
-const columDefSQL = `
+// QueryDef contains the queries to retrieve Column, Table and Foreign Key definitons.
+type QueryDef struct {
+	Column, Table, ForeignKey string
+}
+
+var DefinitionQueries = map[string]QueryDef{
+	"postgres": {
+		Column: `
 SELECT
     a.attnum AS field_ordinal,
     a.attname AS column_name,
     pd.description AS description,
     format_type(a.atttypid, a.atttypmod) AS data_type,
-    a.attnotnull AS not_null,
-    COALESCE(ct.contype = 'p', false) AS  is_primary_key,
+    (CASE WHEN a.attnotnull THEN 1 ELSE 0 END) AS not_null,
+    (CASE WHEN COALESCE(ct.contype = 'p', false) THEN 1 ELSE 0 END) AS is_primary_key,
     CASE WHEN a.atttypid = ANY ('{int,int8,int2}'::regtype[])
       AND EXISTS (
          SELECT 1 FROM pg_attrdef ad
@@ -37,9 +44,8 @@ AND n.nspname = $1
 AND c.relname = $2
 AND a.attnum > 0
 ORDER BY a.attnum
-`
-
-const tableDefSQL = `
+`,
+		Table: `
 SELECT
   c.relname AS table_name,
   pd.description AS description
@@ -50,24 +56,23 @@ LEFT JOIN pg_description pd ON pd.objoid = c.oid AND pd.objsubid = 0
 WHERE n.nspname = $1
 AND c.relkind = 'r'
 ORDER BY c.relname
-`
-
-const fkDefSQL = `
-select
+`,
+		ForeignKey: `
+SELECT
   att2.attname as "child_column"
   , cl.relname as "parent_table"
   , att.attname as "parent_column"
   , con.conname
-  , case 
+  , (CASE WHEN (case
       when pi.indisprimary is null then false
       else pi.indisprimary
-    end as "is_parent_pk"
-  , case 
+    end) THEN 1 ELSE 0 END) as "is_parent_pk"
+  , (CASE WHEN (case
       when ci.indisprimary is null then false
       else ci.indisprimary
-    end as "is_child_pk"
+    end) THEN 1 ELSE 0 END) as "is_child_pk"
 from (
-  select 
+  select
     unnest(con1.conkey) as "parent"
     , unnest(con1.confkey) as "child"
     , con1.confrelid
@@ -90,4 +95,6 @@ join pg_attribute att2
 on att2.attrelid = con.conrelid and att2.attnum = con.parent
 left outer join pg_index ci
 on att2.attrelid = ci.indrelid and att2.attnum = any(ci.indkey)
-`
+`,
+	},
+}
