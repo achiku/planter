@@ -1,4 +1,5 @@
 @startuml
+
 entity "customer" {
   Customer Information
   ..
@@ -62,13 +63,13 @@ entity "vendor" {
   phone_number
 }
 
- customer_order }-- customer 
+ customer_order }-- customer
 
- order_detail ||-|| customer_order 
+ order_detail }-- sku
 
- order_detail }-- sku 
+ order_detail ||-|| customer_order
 
- product }-- vendor 
+ product }-- vendor
 
- sku }-- product 
+ sku }-- product
 @enduml

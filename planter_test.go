@@ -35,7 +35,7 @@ func TestPgLoadColumnDef(t *testing.T) {
 
 	schema := "public"
 	table := "vendor"
-	cols, err := PgLoadColumnDef(conn, schema, table)
+	cols, err := LoadColumnDef(conn, schema, table)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func TestPgLoadForeignKeyDef(t *testing.T) {
 
 	schema := "public"
 	table := "order_detail"
-	fks, err := PgLoadForeignKeyDef(conn, schema, table)
+	fks, err := LoadForeignKeyDef(conn, schema, table)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func TestPgLoadTableDef(t *testing.T) {
 	defer cleanup()
 
 	schema := "public"
-	tbls, err := PgLoadTableDef(conn, schema)
+	tbls, err := LoadTableDef(conn, schema)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,12 +84,12 @@ func TestPgTableToUMLEntry(t *testing.T) {
 	defer cleanup()
 
 	schema := "public"
-	tbls, err := PgLoadTableDef(conn, schema)
+	tbls, err := LoadTableDef(conn, schema)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	buf, err := PgTableToUMLEntry(tbls)
+	buf, err := TableToUMLEntry(tbls)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,12 +101,12 @@ func TestPgForeignKeyToUMLRelation(t *testing.T) {
 	defer cleanup()
 
 	schema := "public"
-	tbls, err := PgLoadTableDef(conn, schema)
+	tbls, err := LoadTableDef(conn, schema)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	buf, err := PgForeignKeyToUMLRelation(tbls)
+	buf, err := ForeignKeyToUMLRelation(tbls)
 	if err != nil {
 		t.Fatal(err)
 	}

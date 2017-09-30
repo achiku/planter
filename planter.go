@@ -28,8 +28,8 @@ func OpenDB(connStr string) (*sql.DB, error) {
 	return conn, nil
 }
 
-// PgColumn postgres columns
-type PgColumn struct {
+// Column postgres columns
+type Column struct {
 	FieldOrdinal int
 	Name         string
 	Comment      sql.NullString
@@ -39,41 +39,57 @@ type PgColumn struct {
 	IsPrimaryKey bool
 }
 
-// PgForeignKey foreign key
-type PgForeignKey struct {
+// ForeignKey foreign key
+type ForeignKey struct {
 	ConstraintName        string
-	ChildTableName        string
-	ChildColName          string
-	IsChildColPrimaryKey  bool
-	ParentTableName       string
-	ParentColName         string
-	IsParentColPrimaryKey bool
-}
-
-// IsOneToMany returns true if one to many relation
-func (k PgForeignKey) IsOneToMany() bool {
-	if k.IsChildColPrimaryKey && !k.IsParentColPrimaryKey {
-		return true
-	}
-	return false
+	SourceTableName       string
+	SourceColName         string
+	IsSourceColPrimaryKey bool
+	TargetTableName       string
+	TargetColName         string
+	IsTargetColPrimaryKey bool
 }
 
 // IsOneToOne returns true if one to one relation
-func (k PgForeignKey) IsOneToOne() bool {
-	if k.IsChildColPrimaryKey && k.IsParentColPrimaryKey {
+func (k *ForeignKey) IsOneToOne() bool {
+	if k.IsSourceColPrimaryKey && k.IsTargetColPrimaryKey {
 		return true
 	}
 	return false
 }
 
-// PgTable postgres table
-type PgTable struct {
+// FindTableByName find table by name
+func FindTableByName(tbls []*Table, name string) *Table {
+	for _, tbl := range tbls {
+		if tbl.Name == name {
+			return tbl
+		}
+	}
+	return nil
+}
+
+// Table postgres table
+type Table struct {
 	Schema      string
 	Name        string
 	Comment     sql.NullString
 	AutoGenPk   bool
-	Columns     []*PgColumn
-	ForeingKeys []*PgForeignKey
+	Columns     []*Column
+	ForeingKeys []*ForeignKey
+}
+
+// IsCompositePK check if table is composite pk
+func (t *Table) IsCompositePK() bool {
+	cnt := 0
+	for _, c := range t.Columns {
+		if c.IsPrimaryKey {
+			cnt++
+		}
+		if cnt >= 2 {
+			return true
+		}
+	}
+	return false
 }
 
 func stripCommentSuffix(s string) string {
@@ -83,15 +99,15 @@ func stripCommentSuffix(s string) string {
 	return s
 }
 
-// PgLoadColumnDef load Postgres column definition
-func PgLoadColumnDef(db Queryer, schema, table string) ([]*PgColumn, error) {
+// LoadColumnDef load Postgres column definition
+func LoadColumnDef(db Queryer, schema, table string) ([]*Column, error) {
 	colDefs, err := db.Query(columDefSQL, schema, table)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load table def")
 	}
-	var cols []*PgColumn
+	var cols []*Column
 	for colDefs.Next() {
-		var c PgColumn
+		var c Column
 		err := colDefs.Scan(
 			&c.FieldOrdinal,
 			&c.Name,
@@ -110,24 +126,24 @@ func PgLoadColumnDef(db Queryer, schema, table string) ([]*PgColumn, error) {
 	return cols, nil
 }
 
-// PgLoadForeignKeyDef load Postgres fk definition
-func PgLoadForeignKeyDef(db Queryer, schema, table string) ([]*PgForeignKey, error) {
+// LoadForeignKeyDef load Postgres fk definition
+func LoadForeignKeyDef(db Queryer, schema, table string) ([]*ForeignKey, error) {
 	fkDefs, err := db.Query(fkDefSQL, schema, table)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load fk def")
 	}
-	var fks []*PgForeignKey
+	var fks []*ForeignKey
 	for fkDefs.Next() {
-		fk := PgForeignKey{
-			ChildTableName: table,
+		fk := ForeignKey{
+			SourceTableName: table,
 		}
 		err := fkDefs.Scan(
-			&fk.ChildColName,
-			&fk.ParentTableName,
-			&fk.ParentColName,
+			&fk.SourceColName,
+			&fk.TargetTableName,
+			&fk.TargetColName,
 			&fk.ConstraintName,
-			&fk.IsParentColPrimaryKey,
-			&fk.IsChildColPrimaryKey,
+			&fk.IsTargetColPrimaryKey,
+			&fk.IsSourceColPrimaryKey,
 		)
 		if err != nil {
 			return nil, err
@@ -137,15 +153,15 @@ func PgLoadForeignKeyDef(db Queryer, schema, table string) ([]*PgForeignKey, err
 	return fks, nil
 }
 
-// PgLoadTableDef load Postgres table definition
-func PgLoadTableDef(db Queryer, schema string) ([]*PgTable, error) {
+// LoadTableDef load Postgres table definition
+func LoadTableDef(db Queryer, schema string) ([]*Table, error) {
 	tbDefs, err := db.Query(tableDefSQL, schema)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load table def")
 	}
-	var tbs []*PgTable
+	var tbs []*Table
 	for tbDefs.Next() {
-		t := &PgTable{Schema: schema}
+		t := &Table{Schema: schema}
 		err := tbDefs.Scan(
 			&t.Name,
 			&t.Comment,
@@ -153,12 +169,12 @@ func PgLoadTableDef(db Queryer, schema string) ([]*PgTable, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to scan")
 		}
-		cols, err := PgLoadColumnDef(db, schema, t.Name)
+		cols, err := LoadColumnDef(db, schema, t.Name)
 		if err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("failed to get columns of %s", t.Name))
 		}
 		t.Columns = cols
-		fks, err := PgLoadForeignKeyDef(db, schema, t.Name)
+		fks, err := LoadForeignKeyDef(db, schema, t.Name)
 		if err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("failed to get fks of %s", t.Name))
 		}
@@ -168,8 +184,8 @@ func PgLoadTableDef(db Queryer, schema string) ([]*PgTable, error) {
 	return tbs, nil
 }
 
-// PgTableToUMLEntry table entry
-func PgTableToUMLEntry(tbls []*PgTable) ([]byte, error) {
+// TableToUMLEntry table entry
+func TableToUMLEntry(tbls []*Table) ([]byte, error) {
 	tpl, err := template.New("entry").Parse(entryTmpl)
 	if err != nil {
 		return nil, err
@@ -185,8 +201,8 @@ func PgTableToUMLEntry(tbls []*PgTable) ([]byte, error) {
 	return src, nil
 }
 
-// PgForeignKeyToUMLRelation relation
-func PgForeignKeyToUMLRelation(tbls []*PgTable) ([]byte, error) {
+// ForeignKeyToUMLRelation relation
+func ForeignKeyToUMLRelation(tbls []*Table) ([]byte, error) {
 	tpl, err := template.New("relation").Parse(relationTmpl)
 	if err != nil {
 		return nil, err
@@ -213,15 +229,15 @@ func contains(v string, l []string) bool {
 }
 
 // FilterTables filter tables
-func FilterTables(tbls []*PgTable, tblNames []string) []*PgTable {
+func FilterTables(tbls []*Table, tblNames []string) []*Table {
 	sort.Strings(tblNames)
 
-	var target []*PgTable
+	var target []*Table
 	for _, tbl := range tbls {
 		if contains(tbl.Name, tblNames) {
-			var fks []*PgForeignKey
+			var fks []*ForeignKey
 			for _, fk := range tbl.ForeingKeys {
-				if contains(fk.ParentTableName, tblNames) {
+				if contains(fk.TargetTableName, tblNames) {
 					fks = append(fks, fk)
 				}
 			}
