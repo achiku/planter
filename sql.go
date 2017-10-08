@@ -90,4 +90,5 @@ join pg_attribute att2
 on att2.attrelid = con.conrelid and att2.attnum = con.parent
 left outer join pg_index ci
 on att2.attrelid = ci.indrelid and att2.attnum = any(ci.indkey)
+order by con.conname
 `
