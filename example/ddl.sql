@@ -13,6 +13,7 @@ create table customer (
   , zip_code text not null
   , address text not null
   , phone_number text not null
+  , registered_at timestamp with time zone not null
 );
 COMMENT ON TABLE customer IS 'Customer Information';
 COMMENT ON COLUMN customer.name IS 'Customer Name';
