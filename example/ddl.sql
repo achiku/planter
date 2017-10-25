@@ -3,6 +3,7 @@ drop table if exists order_detail;
 drop table if exists customer_order;
 drop table if exists sku;
 drop table if exists product;
+drop table if exists vendor_address;
 drop table if exists vendor;
 drop table if exists customer;
 
@@ -24,9 +25,17 @@ COMMENT ON COLUMN customer.phone_number IS 'Customer Phone Number';
 create table vendor (
   id bigserial primary key
   , name text not null
-  , zip_code text not null
-  , address text not null
   , phone_number text not null
+);
+
+create table vendor_address (
+  vendor_id bigint primary key
+  , zip_code text not null
+  , state text not null
+  , city text not null
+  , line1 text not null
+  , line2 text not null
+  , FOREIGN KEY(vendor_id) REFERENCES vendor (id)
 );
 
 create table product (

@@ -75,6 +75,8 @@ func (k *ForeignKey) IsOneToOne() bool {
 			}
 		}
 		return true
+	case !k.SourceTable.IsCompositePK() && k.SourceColumn.IsPrimaryKey && k.TargetColumn.IsPrimaryKey:
+		return true
 	default:
 		return false
 	}

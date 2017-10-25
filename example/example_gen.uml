@@ -9,6 +9,7 @@ entity "customer" {
   zip_code : Customer Zip Code
   address : Customer Address
   phone_number : Customer Phone Number
+  registered_at
 }
 
 entity "customer_order" {
@@ -66,16 +67,24 @@ entity "vendor" {
   + id [PK]
   --
   name
-  zip_code
-  address
   phone_number
+}
+
+entity "vendor_address" {
+  + vendor_id [PK]
+  --
+  zip_code
+  state
+  city
+  line1
+  line2
 }
 
  customer_order }-- customer
 
- order_detail }-- sku
-
  order_detail }-- customer_order
+
+ order_detail }-- sku
 
  order_detail_approval ||-|| order_detail
 
@@ -84,4 +93,6 @@ entity "vendor" {
  product }-- vendor
 
  sku }-- product
+
+ vendor_address ||-|| vendor
 @enduml
