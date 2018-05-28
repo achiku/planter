@@ -55,3 +55,20 @@ Flags:
 Args:
   <conn>  PostgreSQL connection string in URL format
 ```
+
+
+## Test
+
+install dependencies.
+
+```
+go get -u github.com/mattn/gom
+gom install
+```
+
+setup database.
+
+```
+create database planter;
+create user planter;
+```
