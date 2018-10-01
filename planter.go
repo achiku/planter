@@ -287,15 +287,15 @@ func contains(v string, l []string) bool {
 }
 
 // FilterTables filter tables
-func FilterTables(tbls []*Table, tblNames []string) []*Table {
+func FilterTables(match bool, tbls []*Table, tblNames []string) []*Table {
 	sort.Strings(tblNames)
 
 	var target []*Table
 	for _, tbl := range tbls {
-		if contains(tbl.Name, tblNames) {
+		if contains(tbl.Name, tblNames) == match {
 			var fks []*ForeignKey
 			for _, fk := range tbl.ForeingKeys {
-				if contains(fk.TargetTableName, tblNames) {
+				if contains(fk.TargetTableName, tblNames) == match {
 					fks = append(fks, fk)
 				}
 			}
