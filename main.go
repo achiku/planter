@@ -13,8 +13,9 @@ var (
 		"conn", "PostgreSQL connection string in URL format").Required().String()
 	schema = kingpin.Flag(
 		"schema", "PostgreSQL schema name").Default("public").Short('s').String()
-	outFile    = kingpin.Flag("output", "output file path").Short('o').String()
-	targetTbls = kingpin.Flag("table", "target tales").Short('t').Strings()
+	outFile     = kingpin.Flag("output", "output file path").Short('o').String()
+	targetTbls  = kingpin.Flag("table", "target tables").Short('t').Strings()
+	xTargetTbls = kingpin.Flag("exclude", "target tables").Short('x').Strings()
 )
 
 func main() {
@@ -32,9 +33,12 @@ func main() {
 
 	var tbls []*Table
 	if len(*targetTbls) != 0 {
-		tbls = FilterTables(ts, *targetTbls)
+		tbls = FilterTables(true, ts, *targetTbls)
 	} else {
 		tbls = ts
+	}
+	if len(*xTargetTbls) != 0 {
+		tbls = FilterTables(false, tbls, *xTargetTbls)
 	}
 	entry, err := TableToUMLEntry(tbls)
 	if err != nil {
