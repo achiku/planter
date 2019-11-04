@@ -14,7 +14,7 @@ entity "{{ .Name }}" {
   --
 {{- range .Columns }}
   {{- if not .IsPrimaryKey }}
-  {{ .Name }}:{{ .DataType }} {{- if .Comment.Valid }} : {{ .Comment.String }}{{- end }}
+  {{if .NotNull}}*{{end}}{{ .Name }}:{{ .DataType }} {{- if .Comment.Valid }} : {{ .Comment.String }}{{- end }}
   {{- end }}
 {{- end }}
 }
