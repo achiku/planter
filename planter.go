@@ -37,6 +37,7 @@ type Column struct {
 	DDLType      string
 	NotNull      bool
 	IsPrimaryKey bool
+	IsForeignKey bool
 }
 
 // ForeignKey foreign key
@@ -204,6 +205,7 @@ func LoadForeignKeyDef(db Queryer, schema string, tbls []*Table, tbl *Table) ([]
 		if !found {
 			return nil, errors.Errorf("%s.%s not found", fk.SourceTableName, fk.SourceColName)
 		}
+		sourceCol.IsForeignKey = true
 		fk.SourceColumn = sourceCol
 	}
 	return fks, nil
