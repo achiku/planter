@@ -8,13 +8,13 @@ entity "{{ .Name }}" {
 {{- end }}
 {{- range .Columns }}
   {{- if .IsPrimaryKey }}
-  + {{ .Name }} [PK]{{- if .Comment.Valid }} : {{ .Comment.String }}{{- end }}
+  + {{ .Name }}:{{ .DataType }} [PK]{{if .IsForeignKey }}[FK]{{end}}{{- if .Comment.Valid }} : {{ .Comment.String }}{{- end }}
   {{- end }}
 {{- end }}
   --
 {{- range .Columns }}
   {{- if not .IsPrimaryKey }}
-  {{ .Name }} {{- if .Comment.Valid }} : {{ .Comment.String }}{{- end }}
+  {{if .NotNull}}*{{end}}{{ .Name }}:{{ .DataType }} {{if .IsForeignKey}}[FK]{{end}} {{- if .Comment.Valid }} : {{ .Comment.String }}{{- end }}
   {{- end }}
 {{- end }}
 }

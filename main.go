@@ -49,7 +49,9 @@ func main() {
 		log.Fatal(err)
 	}
 	var src []byte
-	src = append([]byte("@startuml\n"), entry...)
+	src = append([]byte("@startuml\n" +
+		"hide circle\n" +
+		"skinparam linetype ortho\n"), entry...)
 	src = append(src, rel...)
 	src = append(src, []byte("@enduml\n")...)
 
