@@ -223,3 +223,173 @@ func TestForeignKeyToUMLRelation(t *testing.T) {
 	}
 	t.Logf("%s", buf)
 }
+
+func TestFilterTables(t *testing.T) {
+	tables := []*Table{
+		{Name: "table1"}, {Name: "table2"},
+	}
+
+	t.Run("match = true", func(t *testing.T) {
+		match := true
+
+		t.Run("filtered by table1", func(t *testing.T) {
+			filters := []string{"table1"}
+
+			retval := FilterTables(match, tables, filters)
+			if len(retval) != 1 {
+				t.Errorf("want %d got %d", 1, len(retval))
+			}
+			if retval[0].Name != "table1" {
+				t.Errorf("want %s got %s", "table1", retval[0].Name)
+			}
+		})
+		t.Run("filtered by table2", func(t *testing.T) {
+			filters := []string{"table2"}
+
+			retval := FilterTables(match, tables, filters)
+			if len(retval) != 1 {
+				t.Errorf("want %d got %d", 1, len(retval))
+			}
+			if retval[0].Name != "table2" {
+				t.Errorf("want %s got %s", "table2", retval[0].Name)
+			}
+		})
+		t.Run("filtered by t", func(t *testing.T) {
+			filters := []string{"t"}
+
+			retval := FilterTables(match, tables, filters)
+			if len(retval) != 2 {
+				t.Errorf("want %d got %d", 2, len(retval))
+			}
+			if retval[0].Name != "table1" {
+				t.Errorf("want %s got %s", "table1", retval[0].Name)
+			}
+			if retval[1].Name != "table2" {
+				t.Errorf("want %s got %s", "table2", retval[1].Name)
+			}
+		})
+		t.Run(`filtered by table\d`, func(t *testing.T) {
+			filters := []string{`table\d`}
+
+			retval := FilterTables(match, tables, filters)
+			if len(retval) != 2 {
+				t.Errorf("want %d got %d", 2, len(retval))
+			}
+			if retval[0].Name != "table1" {
+				t.Errorf("want %s got %s", "table1", retval[0].Name)
+			}
+			if retval[1].Name != "table2" {
+				t.Errorf("want %s got %s", "table2", retval[1].Name)
+			}
+		})
+		t.Run(`filtered by ta*`, func(t *testing.T) {
+			filters := []string{`ta*`}
+
+			retval := FilterTables(match, tables, filters)
+			if len(retval) != 2 {
+				t.Errorf("want %d got %d", 2, len(retval))
+			}
+			if retval[0].Name != "table1" {
+				t.Errorf("want %s got %s", "table1", retval[0].Name)
+			}
+			if retval[1].Name != "table2" {
+				t.Errorf("want %s got %s", "table2", retval[1].Name)
+			}
+		})
+		t.Run(`filtered by [a-z].*1`, func(t *testing.T) {
+			filters := []string{`[a-z].*1`}
+
+			retval := FilterTables(match, tables, filters)
+			if len(retval) != 1 {
+				t.Errorf("want %d got %d", 1, len(retval))
+			}
+			if retval[0].Name != "table1" {
+				t.Errorf("want %s got %s", "table1", retval[0].Name)
+			}
+		})
+		t.Run(`filtered by ^table$`, func(t *testing.T) {
+			filters := []string{`^t$`}
+
+			retval := FilterTables(match, tables, filters)
+			if len(retval) != 0 {
+				t.Errorf("want %d got %d", 0, len(retval))
+			}
+		})
+	})
+
+	t.Run("match = false", func(t *testing.T) {
+		match := false
+
+		t.Run("filtered by table1", func(t *testing.T) {
+			filters := []string{"table1"}
+
+			retval := FilterTables(match, tables, filters)
+			if len(retval) != 1 {
+				t.Errorf("want %d got %d", 1, len(retval))
+			}
+			if retval[0].Name != "table2" {
+				t.Errorf("want %s got %s", "table2", retval[0].Name)
+			}
+		})
+		t.Run("filtered by table2 xxx", func(t *testing.T) {
+			filters := []string{"table2"}
+
+			retval := FilterTables(match, tables, filters)
+			if len(retval) != 1 {
+				t.Errorf("want %d got %d", 1, len(retval))
+			}
+			if retval[0].Name != "table1" {
+				t.Errorf("want %s got %s", "table1", retval[0].Name)
+			}
+		})
+		t.Run("filtered by t", func(t *testing.T) {
+			filters := []string{"t"}
+
+			retval := FilterTables(match, tables, filters)
+			if len(retval) != 0 {
+				t.Errorf("want %d got %d", 0, len(retval))
+			}
+		})
+		t.Run(`filtered by table\d`, func(t *testing.T) {
+			filters := []string{`table\d`}
+
+			retval := FilterTables(match, tables, filters)
+			if len(retval) != 0 {
+				t.Errorf("want %d got %d", 0, len(retval))
+			}
+		})
+		t.Run(`filtered by ta*`, func(t *testing.T) {
+			filters := []string{`ta*`}
+
+			retval := FilterTables(match, tables, filters)
+			if len(retval) != 0 {
+				t.Errorf("want %d got %d", 0, len(retval))
+			}
+		})
+		t.Run(`filtered by [a-z].*1`, func(t *testing.T) {
+			filters := []string{`[a-z].*1`}
+
+			retval := FilterTables(match, tables, filters)
+			if len(retval) != 1 {
+				t.Errorf("want %d got %d", 1, len(retval))
+			}
+			if retval[0].Name != "table2" {
+				t.Errorf("want %s got %s", "table2", retval[0].Name)
+			}
+		})
+		t.Run(`filtered by ^table$`, func(t *testing.T) {
+			filters := []string{`^t$`}
+
+			retval := FilterTables(match, tables, filters)
+			if len(retval) != 2 {
+				t.Errorf("want %d got %d", 2, len(retval))
+			}
+			if retval[0].Name != "table1" {
+				t.Errorf("want %s got %s", "table1", retval[0].Name)
+			}
+			if retval[1].Name != "table2" {
+				t.Errorf("want %s got %s", "table2", retval[1].Name)
+			}
+		})
+	})
+}
