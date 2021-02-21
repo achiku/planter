@@ -1,3 +1,0 @@
-gom 'github.com/pkg/errors', :commit => '2b3a18b5f0fb6b4f9190549597d3f962c02bc5eb'
-gom 'github.com/lib/pq', :commit => 'e42267488fe361b9dc034be7a6bffef5b195bceb'
-gom 'github.com/alecthomas/kingpin', :commit => '297a08eca3cfe76b1bc87a752ec3272fbac539ef'
