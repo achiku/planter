@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"html/template"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -280,10 +281,11 @@ func ForeignKeyToUMLRelation(tbls []*Table) ([]byte, error) {
 	return src, nil
 }
 
-func contains(v string, l []string) bool {
-	i := sort.SearchStrings(l, v)
-	if i < len(l) && l[i] == v {
-		return true
+func contains(v string, r []*regexp.Regexp) bool {
+	for _, e := range r {
+		if e != nil && e.MatchString(v) {
+			return true
+		}
 	}
 	return false
 }
@@ -292,12 +294,19 @@ func contains(v string, l []string) bool {
 func FilterTables(match bool, tbls []*Table, tblNames []string) []*Table {
 	sort.Strings(tblNames)
 
+	var tblExps []*regexp.Regexp
+	for _, tn := range tblNames {
+		str := fmt.Sprintf(`([\\/])?%s([\\/])?`, tn)
+		r := regexp.MustCompile(str)
+		tblExps = append(tblExps, r)
+	}
+
 	var target []*Table
 	for _, tbl := range tbls {
-		if contains(tbl.Name, tblNames) == match {
+		if contains(tbl.Name, tblExps) == match {
 			var fks []*ForeignKey
 			for _, fk := range tbl.ForeingKeys {
-				if contains(fk.TargetTableName, tblNames) == match {
+				if contains(fk.TargetTableName, tblExps) == match {
 					fks = append(fks, fk)
 				}
 			}
