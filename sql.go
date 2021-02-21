@@ -13,7 +13,7 @@ SELECT
          SELECT 1 FROM pg_attrdef ad
          WHERE  ad.adrelid = a.attrelid
          AND    ad.adnum   = a.attnum
-         AND    ad.adbin   = 'nextval('''
+         AND    pg_get_expr(ad.adbin, ad.adrelid) = 'nextval('''
             || (pg_get_serial_sequence (a.attrelid::regclass::text
                                       , a.attname))::regclass
             || '''::regclass)'
