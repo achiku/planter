@@ -1,6 +1,6 @@
 module github.com/achiku/planter
 
-go 1.13
+go 1.16
 
 require (
 	github.com/alecthomas/kingpin v2.2.6+incompatible
