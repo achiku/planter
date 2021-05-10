@@ -1,98 +1,100 @@
 @startuml
+hide circle
+skinparam linetype ortho
 
-entity "customer" {
+entity "**customer**" {
   Customer Information
   ..
-  + id [PK]
+  + ""id"": //bigserial [PK]//
   --
-  name : Customer Name
-  zip_code : Customer Zip Code
-  address : Customer Address
-  phone_number : Customer Phone Number
-  registered_at
+  *""name"": //text  : Customer Name//
+  *""zip_code"": //text  : Customer Zip Code//
+  *""address"": //text  : Customer Address//
+  *""phone_number"": //text  : Customer Phone Number//
+  *""registered_at"": //timestamp with time zone //
 }
 
-entity "customer_order" {
-  + id [PK]
+entity "**customer_order**" {
+  + ""id"": //bigserial [PK]//
   --
-  customer_id
-  delivery_method
-  shipping_address
-  payment_method
-  total_price
-  total_tax_amount
-  ordered_at
+  *""customer_id"": //bigint [FK]//
+  *""delivery_method"": //text //
+  *""shipping_address"": //text //
+  *""payment_method"": //text //
+  *""total_price"": //numeric //
+  *""total_tax_amount"": //numeric //
+  *""ordered_at"": //timestamp with time zone //
 }
 
-entity "order_detail" {
-  + id [PK]
-  + customer_order_id [PK]
+entity "**order_detail**" {
+  + ""id"": //bigserial [PK]//
+  + ""customer_order_id"": //bigint [PK][FK]//
   --
-  sku_id
-  amount
-  price_before_tax
-  price_after_tax
-  ordered_at
+  *""sku_id"": //bigint [FK]//
+  *""amount"": //bigint //
+  *""price_before_tax"": //numeric //
+  *""price_after_tax"": //numeric //
+  *""ordered_at"": //timestamp with time zone //
 }
 
-entity "order_detail_approval" {
-  + order_detail_id [PK]
-  + customer_order_id [PK]
+entity "**order_detail_approval**" {
+  + ""order_detail_id"": //bigint [PK][FK]//
+  + ""customer_order_id"": //bigint [PK][FK]//
   --
-  operator_id
-  approved_at
+  *""operator_id"": //bigint //
+  *""approved_at"": //timestamp with time zone //
 }
 
-entity "product" {
-  + id [PK]
+entity "**product**" {
+  + ""id"": //bigserial [PK]//
   --
-  vendor_id
-  name
-  country
-  category
+  *""vendor_id"": //bigint [FK]//
+  *""name"": //text //
+  *""country"": //text //
+  *""category"": //text //
 }
 
-entity "sku" {
-  + id [PK]
+entity "**sku**" {
+  + ""id"": //bigserial [PK]//
   --
-  product_id
-  color
-  size
-  weight
-  sales_unit_price
-  purchase_unit_price
+  *""product_id"": //bigint [FK]//
+  *""color"": //text //
+  *""size"": //text //
+  *""weight"": //numeric //
+  *""sales_unit_price"": //numeric //
+  *""purchase_unit_price"": //numeric //
 }
 
-entity "vendor" {
-  + id [PK]
+entity "**vendor**" {
+  + ""id"": //bigserial [PK]//
   --
-  name
-  phone_number
+  *""name"": //text //
+  *""phone_number"": //text //
 }
 
-entity "vendor_address" {
-  + vendor_id [PK]
+entity "**vendor_address**" {
+  + ""vendor_id"": //bigint [PK][FK]//
   --
-  zip_code
-  state
-  city
-  line1
-  line2
+  *""zip_code"": //text //
+  *""state"": //text //
+  *""city"": //text //
+  *""line1"": //text //
+  *""line2"": //text //
 }
 
- customer_order }-- customer
+"**customer_order**"   }--  "**customer**"
 
- order_detail }-- customer_order
+"**order_detail**"   }--  "**customer_order**"
 
- order_detail }-- sku
+"**order_detail**"   }--  "**sku**"
 
- order_detail_approval ||-|| order_detail
+"**order_detail_approval**"  ||-||  "**order_detail**"
 
- order_detail_approval ||-|| order_detail
+"**order_detail_approval**"  ||-||  "**order_detail**"
 
- product }-- vendor
+"**product**"   }--  "**vendor**"
 
- sku }-- product
+"**sku**"   }--  "**product**"
 
- vendor_address ||-|| vendor
+"**vendor_address**"  ||-||  "**vendor**"
 @enduml
