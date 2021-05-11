@@ -47,11 +47,12 @@ $ planter --help
 usage: planter [<flags>] <conn>
 
 Flags:
-      --help             Show context-sensitive help (also try --help-long and --help-man).
-  -s, --schema="public"  PostgreSQL schema name
-  -o, --output=OUTPUT    output file path
-  -t, --table=TABLE ...  target tables (can handle regular expressions)
-  -x, --xtable=TABLE ... exclude target tables (can handle regular expressions
+      --help                 Show context-sensitive help (also try --help-long and --help-man).
+  -s, --schema="public"      PostgreSQL schema name
+  -o, --output=OUTPUT        output file path
+  -t, --table=TABLE ...      target tables
+  -x, --exclude=EXCLUDE ...  target tables
+  -T, --title=TITLE          Diagram title
 
 Args:
   <conn>  PostgreSQL connection string in URL format
