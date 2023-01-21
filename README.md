@@ -17,7 +17,7 @@ A team with only software engineers doesn't need ER diagram that much as long as
 ## Installation
 
 ```
-go get -u github.com/achiku/planter
+go install github.com/achiku/planter@latest
 ```
 
 ## Quick Start
