@@ -61,7 +61,13 @@ Args:
 
 ## Test
 
-setup database.
+Run on docker
+
+```
+make
+```
+
+or setup manually and run test
 
 ```
 create database planter;
