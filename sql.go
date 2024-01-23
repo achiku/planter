@@ -48,7 +48,7 @@ JOIN ONLY pg_namespace n
 ON n.oid = c.relnamespace
 LEFT JOIN pg_description pd ON pd.objoid = c.oid AND pd.objsubid = 0
 WHERE n.nspname = $1
-AND c.relkind = 'r'
+AND c.relkind in ('r','p') AND NOT COALESCE((row_to_json(c)->>'relispartition')::boolean,false)
 ORDER BY c.relname
 `
 
@@ -79,6 +79,7 @@ from (
   where ns.nspname = $1
   and cl.relname = $2
   and con1.contype = 'f'
+  and (coalesce((row_to_json(con1)->>'conparentid'),'0')::oid) = 0
 ) con
 join pg_attribute att
 on att.attrelid = con.confrelid and att.attnum = con.child
