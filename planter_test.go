@@ -2,7 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -12,7 +14,12 @@ import (
 // CREATE DATABASE planter OWNER planter;
 
 func testPgSetup(t *testing.T) (*sql.DB, func()) {
-	conn, err := sql.Open("postgres", "user=planter dbname=planter sslmode=disable")
+	port := os.Getenv("DB_PORT")
+	if port == "" {
+		port = "5432"
+	}
+	dsn := fmt.Sprintf("user=planter port=%s dbname=planter sslmode=disable", port)
+	conn, err := sql.Open("postgres", dsn)
 	if err != nil {
 		t.Fatal(err)
 	}

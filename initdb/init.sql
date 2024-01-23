@@ -1,0 +1,3 @@
+CREATE DATABASE planter;
+CREATE USER planter;
+CREATE SCHEMA planter AUTHORIZATION planter;
